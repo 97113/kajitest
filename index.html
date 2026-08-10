@@ -94,11 +94,13 @@ body.vertical #qtext{
 .cellbox{display:inline-block;min-inline-size:1.1em;min-block-size:1.1em;text-align:center;
   border:2px dashed var(--accent);border-radius:5px;margin:0 .06em;line-height:1.15}
 .cellbox.filled{color:var(--ng);border-style:solid;border-color:var(--ng)}
+.cellbox.wide{min-inline-size:4.6em}
+.padyomi{text-align:center;color:var(--accent);font-weight:700;font-size:.95rem;margin-bottom:8px}
 .okuribr{color:var(--accent);font-weight:700}
 
 /* answer area */
 #answerArea{margin-top:14px}
-.cells{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:22px}
+.cells{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:22px}
 #answerSetSeg button{flex:0 0 auto;min-width:62px}
 body.vertical .cells{flex-direction:column;align-items:center}
 .cellwrap{position:relative}
@@ -571,6 +573,8 @@ SETS.forEach(s=>{
   });
 });
 const BY_ID = Object.fromEntries(ALL.map(q=>[q.id,q]));
+/* 手書きマスの数（全問共通・固定）。問題ごとに変えると送り仮名の文字数が推測できてしまう */
+const PAD_CELLS = Math.max(5, ...ALL.map(q=>q.ans.length));
 
 /* =========================================================
    画面切り替え
@@ -733,7 +737,9 @@ function questionHTML(q, revealed){
   const chars = q.ans.split("");
   let blank;
   if(q.okuri){
-    const inner = chars.map(c=>`<span class="cellbox${revealed?" filled":""}">${revealed?esc(c):"　"}</span>`).join("");
+    // 送り仮名の問題は実物のドリルと同じ「1つの広いカッコ」。
+    // マスに区切ると漢字と送り仮名の文字数が分かってしまうため。
+    const inner = `<span class="cellbox wide${revealed?" filled":""}">${revealed?esc(q.ans):"　"}</span>`;
     blank = `<ruby><span class="okuribr">〔</span>${inner}<span class="okuribr">〕</span><rt>${esc(q.yomiText)}</rt></ruby>`;
   }else{
     blank = chars.map((c,i)=>
@@ -747,13 +753,20 @@ function buildAnswerArea(q){
   const area = $("#answerArea");
   area.innerHTML=""; pads=[];
   if(Q.mode==="write"){
-    const n = q.ans.length;
+    // マスの数は問題によらず固定。数が変わると送り仮名の位置が推測できてしまうため。
+    const n = PAD_CELLS;
+    if(q.okuri){
+      const yl = document.createElement("div"); yl.className="padyomi";
+      yl.textContent = "よみ：" + q.yomiText;
+      area.appendChild(yl);
+    }
     const wrap = document.createElement("div"); wrap.className="cells";
-    const size = Math.min(112, Math.floor((Math.min(window.innerWidth,780)-60)/Math.max(n,2)) );
+    const avail = Math.min(window.innerWidth, 820) - 40;
+    const size = Math.max(56, Math.min(112, Math.floor((avail - 8*(n-1))/n)));
     for(let i=0;i<n;i++){
       const cw = document.createElement("div"); cw.className="cellwrap";
       const rt = document.createElement("div"); rt.className="rt";
-      rt.textContent = q.okuri ? (i===0?q.yomiText:"") : (q.yomi[i]||"");
+      rt.textContent = q.okuri ? "" : (q.yomi[i]||"");
       const cv = document.createElement("canvas"); cv.className="pad";
       cw.appendChild(rt); cw.appendChild(cv); wrap.appendChild(cw);
       pads.push(initPad(cv, size));
