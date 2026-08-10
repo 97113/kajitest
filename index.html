@@ -1,0 +1,1146 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="かんじれんしゅう">
+<meta name="theme-color" content="#2f7dd1">
+<title>漢字れんしゅう 5年</title>
+<style>
+:root{
+  --bg:#f4f7fb; --card:#ffffff; --ink:#1c2634; --sub:#6b7a90;
+  --line:#d7e0ec; --accent:#2f7dd1; --accent-d:#1f5fa5;
+  --ok:#17a673; --ng:#e2544c; --warn:#f0a202;
+  --shadow:0 2px 10px rgba(20,40,70,.08);
+  --r:14px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0;height:100%}
+body{
+  background:var(--bg); color:var(--ink);
+  font-family:"Hiragino Sans","Hiragino Kaku Gothic ProN","Noto Sans JP",system-ui,sans-serif;
+  -webkit-text-size-adjust:100%; overscroll-behavior:none;
+  padding-top:env(safe-area-inset-top); padding-bottom:env(safe-area-inset-bottom);
+}
+button{font-family:inherit;font-size:1rem;cursor:pointer;touch-action:manipulation}
+
+/* ---------- layout ---------- */
+#topbar{
+  position:sticky; top:0; z-index:20; display:flex; align-items:center; gap:10px;
+  padding:10px 14px; background:linear-gradient(180deg,#3d8ee0,#2f7dd1); color:#fff;
+  box-shadow:0 2px 8px rgba(20,60,110,.25);
+}
+#topbar h1{font-size:1.05rem;margin:0;font-weight:700;letter-spacing:.02em;flex:1}
+#backBtn{background:rgba(255,255,255,.18);border:0;color:#fff;border-radius:10px;padding:7px 12px;font-weight:700}
+#backBtn[hidden]{display:none}
+main{max-width:820px;margin:0 auto;padding:14px 14px 40px}
+.screen{display:none;animation:fade .18s ease}
+.screen.active{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);padding:14px;margin-bottom:14px}
+.card h2{margin:0 0 10px;font-size:1rem;color:var(--sub);font-weight:700;letter-spacing:.03em}
+.muted{color:var(--sub);font-size:.85rem;line-height:1.6}
+
+/* ---------- buttons ---------- */
+.btn{display:block;width:100%;border:0;border-radius:12px;padding:15px 16px;font-weight:700;font-size:1.05rem;background:var(--accent);color:#fff;box-shadow:0 2px 0 var(--accent-d)}
+.btn:active{transform:translateY(1px);box-shadow:0 1px 0 var(--accent-d)}
+.btn.sub{background:#fff;color:var(--accent);border:2px solid var(--accent);box-shadow:none}
+.btn.ghost{background:#eef3f9;color:var(--ink);box-shadow:none;border:1px solid var(--line)}
+.btn.danger{background:var(--ng);box-shadow:0 2px 0 #b23a33}
+.btn+.btn{margin-top:10px}
+.btnrow{display:flex;gap:10px}
+.btnrow .btn{margin-top:0}
+
+/* segmented control */
+.seg{display:flex;background:#eaf0f8;border-radius:12px;padding:4px;gap:4px}
+.seg button{flex:1;border:0;background:transparent;padding:10px 6px;border-radius:9px;font-weight:700;color:var(--sub);font-size:.92rem}
+.seg button.on{background:#fff;color:var(--accent);box-shadow:0 1px 4px rgba(20,50,90,.14)}
+
+/* set list */
+.setlist{display:grid;grid-template-columns:1fr;gap:9px}
+.setbtn{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px 13px;box-shadow:var(--shadow)}
+.setbtn .no{flex:none;width:44px;height:44px;border-radius:11px;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:1.05rem}
+.setbtn .tt{flex:1;min-width:0}
+.setbtn .tt b{display:block;font-size:.98rem;line-height:1.35}
+.setbtn .tt span{display:block;font-size:.76rem;color:var(--sub);margin-top:3px}
+.badge{flex:none;font-size:.74rem;font-weight:800;padding:4px 8px;border-radius:999px;background:#eef3f9;color:var(--sub)}
+.badge.good{background:#e3f7ef;color:var(--ok)}
+.badge.mid{background:#fdf3e0;color:#c07d00}
+
+/* ---------- quiz ---------- */
+#qhead{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+#qcount{font-weight:800;font-size:.95rem}
+#combo{margin-left:auto;font-weight:800;color:var(--warn);font-size:.9rem;opacity:0;transition:opacity .2s}
+#combo.on{opacity:1}
+.bar{height:8px;background:#e3eaf4;border-radius:99px;overflow:hidden;margin-bottom:14px}
+.bar i{display:block;height:100%;background:linear-gradient(90deg,#4f9ae8,#2f7dd1);width:0;transition:width .3s}
+
+#qtext{
+  background:#fff;border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);
+  padding:20px 16px; font-size:1.5rem; line-height:2.1; letter-spacing:.02em;
+  font-family:"Hiragino Mincho ProN","Yu Mincho",serif;
+}
+body.vertical #qtext{
+  writing-mode:vertical-rl; width:100%;
+  height:fit-content; min-height:180px; max-height:58vh; overflow-x:auto; overflow-y:hidden;
+  padding:18px 20px; line-height:2.4;
+}
+#qtext ruby{ruby-align:center}
+#qtext rt{font-size:.42em;color:var(--accent);font-family:"Hiragino Sans",sans-serif;letter-spacing:0}
+.cellbox{display:inline-block;min-inline-size:1.1em;min-block-size:1.1em;text-align:center;
+  border:2px dashed var(--accent);border-radius:5px;margin:0 .06em;line-height:1.15}
+.cellbox.filled{color:var(--ng);border-style:solid;border-color:var(--ng)}
+.okuribr{color:var(--accent);font-weight:700}
+
+/* answer area */
+#answerArea{margin-top:14px}
+.cells{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:22px}
+#answerSetSeg button{flex:0 0 auto;min-width:62px}
+body.vertical .cells{flex-direction:column;align-items:center}
+.cellwrap{position:relative}
+.cellwrap .rt{position:absolute;top:-18px;left:0;right:0;text-align:center;font-size:.76rem;color:var(--accent);font-weight:700}
+canvas.pad{background:#fff;border:2px solid var(--line);border-radius:10px;touch-action:none;display:block}
+.padtools{display:flex;gap:8px;justify-content:center;margin-top:12px}
+.padtools button{border:1px solid var(--line);background:#fff;border-radius:10px;padding:9px 14px;font-weight:700;color:var(--sub)}
+
+.choices{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.choice{border:2px solid var(--line);background:#fff;border-radius:12px;padding:16px 8px;font-size:1.6rem;font-weight:700;
+  font-family:"Hiragino Mincho ProN","Yu Mincho",serif;box-shadow:var(--shadow)}
+.choice.correct{border-color:var(--ok);background:#e9f9f2;color:var(--ok)}
+.choice.wrong{border-color:var(--ng);background:#fdeceb;color:var(--ng)}
+.choice:disabled{opacity:.55}
+
+/* reveal */
+#reveal{margin-top:14px;display:none}
+#reveal.on{display:block}
+.answerbox{background:#fff;border:2px dashed var(--accent);border-radius:var(--r);padding:16px;text-align:center}
+.answerbox .lbl{font-size:.8rem;color:var(--sub);font-weight:700}
+.answerbox .val{font-size:3rem;font-weight:700;color:var(--ng);letter-spacing:.08em;margin-top:6px;
+  font-family:"UD デジタル 教科書体 NP-R","Hiragino Mincho ProN","Yu Mincho",serif}
+.answerbox .yomi{font-size:.9rem;color:var(--sub);margin-top:4px}
+.judge{display:flex;gap:12px;margin-top:12px}
+.judge button{flex:1;border:0;border-radius:14px;padding:18px 0;font-size:1.35rem;font-weight:800;color:#fff}
+.judge .maru{background:var(--ok);box-shadow:0 3px 0 #0f7d56}
+.judge .batsu{background:var(--ng);box-shadow:0 3px 0 #b23a33}
+
+/* feedback splash */
+#splash{position:fixed;inset:0;display:none;align-items:center;justify-content:center;pointer-events:none;z-index:50}
+#splash.on{display:flex}
+#splash span{font-size:9rem;font-weight:800;animation:pop .5s ease}
+#splash.ok span{color:rgba(23,166,115,.85)}
+#splash.ng span{color:rgba(226,84,76,.85)}
+@keyframes pop{0%{transform:scale(.4);opacity:0}40%{transform:scale(1.1);opacity:1}100%{transform:scale(1);opacity:0}}
+
+/* result */
+.score{text-align:center;padding:8px 0 4px}
+.score .big{font-size:3.4rem;font-weight:800;color:var(--accent);line-height:1.1}
+.score .big small{font-size:1.2rem;color:var(--sub);font-weight:700}
+.score .msg{margin-top:6px;font-weight:700}
+.wronglist{list-style:none;margin:10px 0 0;padding:0}
+.wronglist li{display:flex;align-items:center;gap:10px;padding:9px 4px;border-bottom:1px solid var(--line);font-size:.95rem}
+.wronglist li:last-child{border-bottom:0}
+.wronglist .ans{font-family:"Hiragino Mincho ProN",serif;font-size:1.25rem;font-weight:700;color:var(--ng);flex:none;min-width:3.4em}
+.wronglist .st{flex:none;font-weight:800}
+.wronglist .st.ok{color:var(--ok)}
+.wronglist .st.ng{color:var(--ng)}
+
+/* history */
+.hlist{list-style:none;margin:0;padding:0}
+.hlist li{display:flex;align-items:center;gap:10px;padding:12px 4px;border-bottom:1px solid var(--line)}
+.hlist li:last-child{border-bottom:0}
+.hlist .d{font-size:.8rem;color:var(--sub);flex:none;width:5.4em}
+.hlist .t{flex:1;min-width:0;font-size:.92rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hlist .s{font-weight:800;flex:none}
+.rank{list-style:none;margin:0;padding:0}
+.rank li{display:flex;align-items:center;gap:10px;padding:8px 4px;border-bottom:1px solid var(--line)}
+.rank li:last-child{border-bottom:0}
+.rank .k{font-family:"Hiragino Mincho ProN",serif;font-size:1.3rem;font-weight:700;min-width:4em}
+.rank .b{flex:1;height:8px;background:#eef2f8;border-radius:99px;overflow:hidden}
+.rank .b i{display:block;height:100%;background:var(--ng)}
+.rank .n{font-size:.82rem;color:var(--sub);flex:none}
+
+table.answers{width:100%;border-collapse:collapse;font-size:.9rem}
+table.answers th,table.answers td{border-bottom:1px solid var(--line);padding:7px 5px;text-align:left;vertical-align:top}
+table.answers th{color:var(--sub);font-size:.78rem}
+table.answers .a{font-family:"Hiragino Mincho ProN",serif;font-size:1.15rem;font-weight:700;white-space:nowrap}
+
+/* modal */
+#modal{position:fixed;inset:0;background:rgba(15,30,50,.5);display:none;align-items:center;justify-content:center;z-index:60;padding:20px}
+#modal.on{display:flex}
+#modal .box{background:#fff;border-radius:16px;padding:20px;max-width:420px;width:100%;box-shadow:0 12px 40px rgba(0,0,0,.25)}
+#modal h3{margin:0 0 8px;font-size:1.1rem}
+#modal p{margin:0 0 16px;color:var(--sub);font-size:.92rem;line-height:1.6}
+#modal input{width:100%;padding:12px;border:2px solid var(--line);border-radius:10px;font-size:1.1rem;margin-bottom:12px}
+.spacer{height:6px}
+.row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
+.row:last-child{border-bottom:0}
+.row .lb{font-weight:700;font-size:.95rem}
+.row .lb small{display:block;font-weight:400;color:var(--sub);font-size:.78rem;margin-top:2px}
+</style>
+</head>
+<body>
+
+<header id="topbar">
+  <button id="backBtn" hidden>‹ もどる</button>
+  <h1 id="title">漢字れんしゅう 5年</h1>
+</header>
+
+<main>
+  <!-- ============ HOME ============ -->
+  <section id="scr-home" class="screen active">
+    <div class="card">
+      <h2>こたえかた</h2>
+      <div class="seg" id="modeSeg">
+        <button data-mode="write">✏️ 手書き</button>
+        <button data-mode="choice">🔢 4たく</button>
+        <button data-mode="selfcheck">⭕️ ○×だけ</button>
+      </div>
+      <p class="muted" id="modeHelp" style="margin:10px 0 0"></p>
+    </div>
+
+    <div class="card">
+      <h2>れんしゅうする</h2>
+      <button class="btn" id="btnWeak">💪 にがてな問題だけ <span id="weakCount"></span></button>
+      <button class="btn sub" id="btnRandom">🎲 ぜんぶからランダム</button>
+    </div>
+
+    <div class="card">
+      <h2>プリントをえらぶ</h2>
+      <div class="setlist" id="setList"></div>
+    </div>
+
+    <div class="card">
+      <button class="btn ghost" id="btnHistory">📊 これまでの記録</button>
+      <div class="spacer"></div>
+      <button class="btn ghost" id="btnSettings">⚙️ せってい</button>
+    </div>
+  </section>
+
+  <!-- ============ QUIZ ============ -->
+  <section id="scr-quiz" class="screen">
+    <div id="qhead">
+      <span id="qcount"></span>
+      <span id="combo"></span>
+    </div>
+    <div class="bar"><i id="qbar"></i></div>
+
+    <div id="qtext"></div>
+
+    <div id="answerArea"></div>
+
+    <div id="reveal">
+      <div class="answerbox">
+        <div class="lbl">こたえ</div>
+        <div class="val" id="ansVal"></div>
+        <div class="yomi" id="ansYomi"></div>
+      </div>
+      <div class="judge" id="judgeRow">
+        <button class="maru" data-j="1">○ できた</button>
+        <button class="batsu" data-j="0">× まちがえた</button>
+      </div>
+      <button class="btn" id="btnNext" style="display:none;margin-top:12px">つぎへ ▶</button>
+    </div>
+
+    <div style="margin-top:14px" id="quizActions">
+      <button class="btn" id="btnShow">こたえを見る</button>
+      <div class="spacer"></div>
+      <button class="btn ghost" id="btnSpeak">🔊 よみあげ</button>
+      <div class="spacer"></div>
+      <button class="btn ghost" id="btnQuit">中断してホームへ</button>
+    </div>
+  </section>
+
+  <!-- ============ RESULT ============ -->
+  <section id="scr-result" class="screen">
+    <div class="card">
+      <div class="score">
+        <div class="big" id="scoreBig"></div>
+        <div class="msg" id="scoreMsg"></div>
+      </div>
+    </div>
+    <div class="card" id="resultWrongCard">
+      <h2>けっか</h2>
+      <ul class="wronglist" id="resultList"></ul>
+    </div>
+    <div class="card">
+      <button class="btn" id="btnRetryWrong">🔁 まちがえた問題だけ もう1回</button>
+      <button class="btn sub" id="btnAgain">もう一度 はじめから</button>
+      <button class="btn ghost" id="btnHome">ホームへ</button>
+    </div>
+  </section>
+
+  <!-- ============ HISTORY ============ -->
+  <section id="scr-history" class="screen">
+    <div class="card">
+      <h2>正答率のうつりかわり</h2>
+      <div id="graph"></div>
+    </div>
+    <div class="card">
+      <h2>よく まちがえる 漢字</h2>
+      <ul class="rank" id="rankList"></ul>
+    </div>
+    <div class="card">
+      <h2>テストの記録</h2>
+      <ul class="hlist" id="histList"></ul>
+    </div>
+  </section>
+
+  <section id="scr-detail" class="screen">
+    <div class="card">
+      <h2 id="detailHead"></h2>
+      <ul class="wronglist" id="detailList"></ul>
+    </div>
+  </section>
+
+  <!-- ============ SETTINGS ============ -->
+  <section id="scr-settings" class="screen">
+    <div class="card">
+      <h2>ひょうじ</h2>
+      <div class="row">
+        <div class="lb">文章のむき<small>たて書き＝ドリルと同じ</small></div>
+        <div class="seg" style="flex:none;width:170px">
+          <button data-lay="horizontal">よこ</button>
+          <button data-lay="vertical">たて</button>
+        </div>
+      </div>
+      <div class="row">
+        <div class="lb">出題のじゅんばん<small>シャッフルすると順番で覚えにくい</small></div>
+        <div class="seg" style="flex:none;width:170px">
+          <button data-shuf="0">じゅん番</button>
+          <button data-shuf="1">シャッフル</button>
+        </div>
+      </div>
+      <div class="row">
+        <div class="lb">よみあげ<small>問題文を音声で読む</small></div>
+        <div class="seg" style="flex:none;width:170px">
+          <button data-spk="1">つかう</button>
+          <button data-spk="0">つかわない</button>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>データ</h2>
+      <button class="btn ghost" id="btnExport">💾 バックアップを保存（JSON）</button>
+      <div class="spacer"></div>
+      <button class="btn ghost" id="btnImport">📂 バックアップを読みこむ</button>
+      <input type="file" id="fileInput" accept="application/json,.json" hidden>
+      <p class="muted" style="margin:10px 0 0">記録はこの端末のブラウザに保存されます。端末を変えるときはバックアップを使ってください。</p>
+    </div>
+    <div class="card">
+      <button class="btn ghost" id="btnParent">🔒 おうちの人メニュー</button>
+    </div>
+  </section>
+
+  <!-- ============ PARENT ============ -->
+  <section id="scr-parent" class="screen">
+    <div class="card">
+      <h2>まとめ</h2>
+      <div id="parentStats" class="muted"></div>
+    </div>
+    <div class="card">
+      <h2>にがてリスト（2回連続正解で卒業）</h2>
+      <ul class="wronglist" id="weakList"></ul>
+    </div>
+    <div class="card">
+      <h2>全問題と答え</h2>
+      <div class="seg" id="answerSetSeg" style="margin-bottom:10px;flex-wrap:wrap"></div>
+      <div style="overflow-x:auto"><table class="answers" id="answerTable"></table></div>
+    </div>
+    <div class="card">
+      <h2>リセット</h2>
+      <button class="btn ghost" id="btnResetWeak">にがてリストだけ消す</button>
+      <div class="spacer"></div>
+      <button class="btn danger" id="btnResetAll">すべての記録を消す</button>
+    </div>
+  </section>
+</main>
+
+<div id="splash"><span></span></div>
+
+<div id="modal"><div class="box">
+  <h3 id="mTitle"></h3>
+  <p id="mBody"></p>
+  <input id="mInput" hidden>
+  <button class="btn" id="mOk"></button>
+  <div class="spacer"></div>
+  <button class="btn ghost" id="mCancel"></button>
+</div></div>
+
+<script>
+/* =========================================================
+   問題データ
+   出典: 光村図書 5年 漢字ドリル「たしかめテスト」全9枚 / 各10問
+   [前の文, 後の文, こたえ, 読み(配列 or 文字列), 送り仮名フラグ]
+   ========================================================= */
+const SETS = [
+ {num:8, test:1, title:"銀色の裏地(1)", range:"上18〜29", qs:[
+  ["気持ちを","する。","想像",["そう","ぞう"]],
+  ["貴重な","をする。","経験",["けい","けん"]],
+  ["長い年月を","。","経る","へる",1],
+  ["","が変化する。","心情",["しん","じょう"]],
+  ["人に","をかける。","情け","なさけ",1],
+  ["物語の場面が","に残る。","印象",["いん","しょう"]],
+  ["","が草を食べる様子。","象",["ぞう"]],
+  ["","に練習を休まない。","絶対",["ぜっ","たい"]],
+  ["","本を読む。","厚い","あつい",1],
+  ["先生が","をわたす。","賞状",["しょう","じょう"]]
+ ]},
+ {num:12, test:2, title:"銀色の裏地(2)／図書館を使いこなそう", range:"上30〜41", qs:[
+  ["みんなが","。","喜ぶ","よろこぶ",1],
+  ["","劇を演じる。","喜",["き"]],
+  ["相手の考えを","する。","理解",["り","かい"]],
+  ["練習問題を","。","解く","とく",1],
+  ["物語の","をまとめる。","内容",["ない","よう"]],
+  ["建築の","が進歩する。","技術",["ぎ","じゅつ"]],
+  ["言葉を","に使用する。","適切",["てき","せつ"]],
+  ["外出を","する。","許可",["きょ","か"]],
+  ["まちがいを","。","許す","ゆるす",1],
+  ["","の方法をためす。","複数",["ふく","すう"]]
+ ]},
+ {num:16, test:3, title:"漢字の成り立ち(1)", range:"上42・43", qs:[
+  ["写真の","。","構図",["こう","ず"]],
+  ["","の木の下で花見をする。","桜",["さくら"]],
+  ["梅の花が","さきになる。","八分",["はち","ぶ"]],
+  ["チームが","となって戦う。","一丸",["いち","がん"]],
+  ["オリンピックの","メダル。","銅",["どう"]],
+  ["本の表紙が","。","破れる","やぶれる",1],
+  ["古いお寺を","する。","修復",["しゅう","ふく"]],
+  ["学問を","。","修める","おさめる",1],
+  ["思いの","、人が多い。","外",["ほか"]],
+  ["近所の","に行く。","眼科",["がん","か"]]
+ ]},
+ {num:20, test:4, title:"漢字の成り立ち(2)／季節の言葉 春", range:"上43〜45", qs:[
+  ["バスが","する。","停車",["てい","しゃ"]],
+  ["","出かける。","直ちに","ただちに",1],
+  ["","の家に行く。","祖父母",["そ","ふ","ぼ"]],
+  ["温かい","を食べる。","赤飯",["せき","はん"]],
+  ["実験の","をする。","準備",["じゅん","び"]],
+  ["石油を輸入する","会社。","貿易",["ぼう","えき"]],
+  ["","な方法を選ぶ。","安易",["あん","い"]],
+  ["","会議を開く。","国際",["こく","さい"]],
+  ["","の散歩をする。","愛犬",["あい","けん"]],
+  ["部屋を","にする。","清潔",["せい","けつ"]]
+ ]},
+ {num:24, test:5, title:"きいて、きいて、きいてみよう", range:"上46〜50", qs:[
+  ["先生に","する。","質問",["しつ","もん"]],
+  ["取材の","をする。","準備",["じゅん","び"]],
+  ["研究の結果を","する。","報告",["ほう","こく"]],
+  ["鳥が春を","。","告げる","つげる",1],
+  ["野球のチームに","する。","所属",["しょ","ぞく"]],
+  ["参加者の人数を","。","確かめる","たしかめる",1],
+  ["","に時をきざむ。","正確",["せい","かく"]],
+  ["うれしそうな","。","表情",["ひょう","じょう"]],
+  ["ちがいを","する。","意識",["い","しき"]],
+  ["","な事実。","確か","たしか",1]
+ ]},
+ {num:28, test:6, title:"見立てる／原因と結果", range:"上51〜63", qs:[
+  ["","を考える。","原因",["げん","いん"]],
+  ["アメリカの","。","製品",["せい","ひん"]],
+  ["","を組んで家をつくる。","丸太",["まる","た"]],
+  ["大きな船を","。","造る","つくる",1],
+  ["兄弟の顔が","。","似る","にる",1],
+  ["参加する人数を","。","限る","かぎる",1],
+  ["","と会話をする。","留学生",["りゅう","がく","せい"]],
+  ["言葉で","する。","表現",["ひょう","げん"]],
+  ["雲から月が","。","現れる","あらわれる",1],
+  ["品物を","わたす。","直接",["ちょく","せつ"]]
+ ]},
+ {num:34, test:7, title:"敬語", range:"上64・65", qs:[
+  ["妹の相談に","じる。","応",["おう"]],
+  ["相手の要求に","。","応える","こたえる",1],
+  ["","の人が集まる。","大勢",["おお","ぜい"]],
+  ["風の","が強くなる。","勢い","いきおい",1],
+  ["高い山で","を見る。","氷河",["ひょう","が"]],
+  ["世界の","を勉強する。","歴史",["れき","し"]],
+  ["","が発車する。","新幹線",["しん","かん","せん"]],
+  ["きつつきが木の","をつつく。","幹",["みき"]],
+  ["友人を家に","。","招く","まねく",1],
+  ["夕食に","する。","招待",["しょう","たい"]]
+ ]},
+ {num:38, test:8, title:"日常を十七音で／目的に応じて引用するとき", range:"上66〜77", qs:[
+  ["俳","を味わう。","句",["く"]],
+  ["","の出来事を書く。","日常",["にち","じょう"]],
+  ["","に前向きに考える。","常",["つね"]],
+  ["強く","に残る。","印象",["いん","しょう"]],
+  ["本を","よくならべる。","順序",["じゅん","じょ"]],
+  ["","文学に親しむ。","古典",["こ","てん"]],
+  ["","が刀を構える。","武士",["ぶ","し"]],
+  ["試合前に","ぶるいをする。","武者",["む","しゃ"]],
+  ["会議の","を用意する。","資料",["し","りょう"]],
+  ["湖の水質を","する。","調査",["ちょう","さ"]]
+ ]},
+ {num:42, test:9, title:"みんなが使いやすいデザイン／同じ読み方の漢字(1)", range:"上78〜85", qs:[
+  ["年齢や","。","性別",["せい","べつ"]],
+  ["","から出る。","非常口",["ひ","じょう","ぐち"]],
+  ["","な学習の時間。","総合的",["そう","ごう","てき"]],
+  ["弟の身長を","。","測る","はかる",1],
+  ["自動車の速度を","する。","計測",["けい","そく"]],
+  ["マラソンのタイムを","。","計る","はかる",1],
+  ["大学の","を建てる。","校舎",["こう","しゃ"]],
+  ["家と駅を","する。","往復",["おう","ふく"]],
+  ["劇の","が始まる。","公演",["こう","えん"]],
+  ["","誌を買う。","週刊",["しゅう","かん"]]
+ ]}
+];
+
+/* 4択用: 手動指定の選択肢（同訓異字はここで確実に出す） */
+const FORCED = {
+  "s42-4":["計る","量る","図る"],
+  "s42-6":["測る","量る","図る"],
+  "s16-9":["他","側","処"],
+  "s24-10":["硬か","覚か","格か"],
+  "s28-4":["作る","創る","告る"],
+  "s34-2":["答える","応じる","広える"]
+};
+
+/* 4択用: にせものを作るための「にた漢字」表 */
+const CONFUSE = {
+ "想":["相","創","箱"],"像":["象","造","働"],"経":["径","軽","係"],"験":["検","険","験"],
+ "心":["必","忘","芯"],"情":["精","清","晴"],"印":["卵","即","却"],"象":["像","豚","家"],
+ "絶":["紹","給","経"],"対":["村","討","付"],"厚":["暑","原","序"],"賞":["常","堂","当"],
+ "状":["壮","将","犬"],"喜":["善","幸","豆"],"理":["里","埋","利"],"解":["触","角","解"],
+ "内":["肉","円","丙"],"容":["客","谷","溶"],"技":["枝","持","支"],"術":["述","街","衛"],
+ "適":["敵","滴","商"],"切":["功","初","刀"],"許":["評","計","話"],"可":["司","何","何"],
+ "複":["復","腹","福"],"数":["教","散","救"],"構":["講","備","港"],"図":["回","園","区"],
+ "桜":["様","松","梅"],"八":["入","人","九"],"分":["文","公","今"],"一":["二","三","十"],
+ "丸":["九","丹","刃"],"銅":["銀","鉄","同"],"破":["波","液","皮"],"修":["収","終","備"],
+ "外":["他","処","列"],"眼":["限","根","銀"],"科":["料","秒","利"],"停":["亭","低","侍"],
+ "車":["東","軍","事"],"直":["真","置","値"],"祖":["組","租","相"],"父":["交","文","久"],
+ "母":["毎","舟","毋"],"赤":["赤","亦","恭"],"飯":["飲","坂","板"],"準":["准","隼","進"],
+ "備":["倍","供","側"],"貿":["賀","貸","質"],"易":["場","湯","陽"],"安":["案","宇","完"],
+ "国":["固","囲","団"],"際":["祭","察","標"],"愛":["受","変","要"],"犬":["大","太","天"],
+ "清":["晴","精","静"],"潔":["激","潮","結"],"質":["貨","買","賃"],"問":["間","門","聞"],
+ "報":["服","執","幸"],"告":["造","吉","舎"],"所":["近","折","新"],"属":["続","層","禹"],
+ "確":["覚","格","鶴"],"正":["止","政","証"],"表":["衣","裏","現"],"意":["音","億","憶"],
+ "識":["織","職","議"],"原":["源","厚","願"],"因":["困","囲","団"],"製":["制","製","製"],
+ "品":["晶","員","口"],"太":["大","犬","天"],"造":["告","道","週"],"似":["以","仏","化"],
+ "限":["眼","根","阪"],"留":["流","貿","溜"],"学":["覚","字","栄"],"生":["主","牛","性"],
+ "現":["規","親","表"],"接":["招","授","折"],"応":["広","芯","忘"],"大":["太","犬","天"],
+ "勢":["熱","執","芸"],"氷":["水","永","冰"],"河":["何","可","泣"],"歴":["暦","麻","歴"],
+ "史":["更","吏","央"],"新":["親","薪","辛"],"幹":["乾","韓","幸"],"招":["紹","昭","照"],
+ "待":["持","特","侍"],"句":["旬","包","可"],"日":["目","白","曰"],"常":["賞","堂","当"],
+ "順":["頂","願","順"],"序":["庁","床","予"],"古":["占","吉","石"],"典":["曲","共","興"],
+ "武":["式","戈","代"],"士":["土","仕","工"],"者":["著","老","考"],"資":["賃","貨","質"],
+ "料":["科","材","斗"],"調":["週","語","課"],"査":["直","置","杏"],"性":["姓","住","牲"],
+ "別":["列","則","利"],"非":["悲","罪","扉"],"口":["日","回","目"],"総":["絵","窓","給"],
+ "合":["令","答","会"],"的":["約","酌","灼"],"測":["側","則","計"],"計":["討","訂","測"],
+ "校":["枝","交","効"],"舎":["合","告","館"],"往":["住","主","徒"],"復":["複","腹","福"],
+ "公":["分","松","私"],"演":["寅","浜","縁"],"週":["調","周","遇"],"刊":["刈","刑","干"]
+};
+
+/* =========================================================
+   状態
+   ========================================================= */
+const KEY = "kanji5.v1";
+const DEF = {
+  version:1,
+  settings:{ answerMode:"write", layout:"horizontal", shuffle:false, speech:true },
+  session:null,
+  history:[],
+  weak:{}
+};
+let S = load();
+let Q = null;   // 実行中のクイズ
+
+function clone(o){ return JSON.parse(JSON.stringify(o)); }
+function load(){
+  try{
+    const raw = localStorage.getItem(KEY);
+    if(!raw) return clone(DEF);
+    const o = JSON.parse(raw);
+    return Object.assign(clone(DEF), o, {settings:Object.assign({}, DEF.settings, o.settings||{})});
+  }catch(e){ return clone(DEF); }
+}
+function save(){ try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){ console.warn("save failed", e); } }
+
+/* 問題の正規化 */
+const ALL = [];
+SETS.forEach(s=>{
+  s.items = s.qs.map((q,i)=>{
+    const o = {
+      id:`s${s.num}-${i+1}`, setNum:s.num, setTitle:s.title, test:s.test, no:i+1,
+      pre:q[0], post:q[1], ans:q[2], yomi:q[3], okuri:!!q[4]
+    };
+    o.yomiText = Array.isArray(o.yomi) ? o.yomi.join("") : o.yomi;
+    ALL.push(o);
+    return o;
+  });
+});
+const BY_ID = Object.fromEntries(ALL.map(q=>[q.id,q]));
+
+/* =========================================================
+   画面切り替え
+   ========================================================= */
+const $ = s=>document.querySelector(s);
+const $$ = s=>Array.from(document.querySelectorAll(s));
+
+function show(name, opts={}){
+  $$(".screen").forEach(el=>el.classList.remove("active"));
+  $("#scr-"+name).classList.add("active");
+  window.scrollTo(0,0);
+  const titles = {home:"漢字れんしゅう 5年", quiz:opts.title||"れんしゅう", result:"けっか",
+    history:"これまでの記録", detail:"テストの中身", settings:"せってい", parent:"おうちの人メニュー"};
+  $("#title").textContent = titles[name]||"";
+  $("#backBtn").hidden = (name==="home");
+  current = name;
+}
+let current = "home";
+$("#backBtn").onclick = ()=>{
+  if(current==="quiz"){ confirmQuit(); return; }
+  if(current==="detail"){ show("history"); return; }
+  if(current==="parent"){ show("settings"); return; }
+  show("home"); renderHome();
+};
+
+/* modal helper */
+function modal({title, body, ok="OK", cancel="キャンセル", input=false, placeholder="", onOk, onCancel}){
+  $("#mTitle").textContent = title;
+  $("#mBody").innerHTML = body||"";
+  const inp = $("#mInput");
+  inp.hidden = !input; inp.value=""; inp.placeholder = placeholder;
+  if(input) inp.type = "number", inp.inputMode="numeric";
+  $("#mOk").textContent = ok;
+  $("#mCancel").textContent = cancel;
+  $("#mCancel").style.display = cancel ? "block":"none";
+  $("#modal").classList.add("on");
+  $("#mOk").onclick = ()=>{ $("#modal").classList.remove("on"); onOk && onOk(inp.value); };
+  $("#mCancel").onclick = ()=>{ $("#modal").classList.remove("on"); onCancel && onCancel(); };
+  if(input) setTimeout(()=>inp.focus(), 100);
+}
+
+/* =========================================================
+   ホーム
+   ========================================================= */
+function setBodyClass(){
+  document.body.classList.toggle("vertical", S.settings.layout==="vertical");
+}
+const MODE_HELP = {
+  write:"マスに指やペンで漢字を書く → 「こたえを見る」で答え合わせ → ○か×を自分でタップします。",
+  choice:"4つの中から正しい漢字をえらびます。タップするとすぐに採点されます。",
+  selfcheck:"頭の中（または紙）で答えてから「こたえを見る」→ ○か×をタップします。"
+};
+function renderHome(){
+  setBodyClass();
+  $$("#modeSeg button").forEach(b=>b.classList.toggle("on", b.dataset.mode===S.settings.answerMode));
+  $("#modeHelp").textContent = MODE_HELP[S.settings.answerMode];
+
+  const wn = Object.keys(S.weak).length;
+  $("#weakCount").textContent = wn ? `(${wn}問)` : "(なし)";
+  $("#btnWeak").disabled = wn===0;
+  $("#btnWeak").style.opacity = wn===0 ? .5 : 1;
+
+  const list = $("#setList"); list.innerHTML="";
+  SETS.forEach(s=>{
+    const st = setStat(s);
+    const b = document.createElement("button");
+    b.className="setbtn";
+    b.innerHTML = `<span class="no">${s.num}</span>
+      <span class="tt"><b>${esc(s.title)}</b><span>たしかめテスト${"①②③④⑤⑥⑦⑧⑨"[s.test-1]}・${s.range}・10問</span></span>
+      <span class="badge ${st.cls}">${st.label}</span>`;
+    b.onclick = ()=>startQuiz({kind:"set", setNum:s.num});
+    list.appendChild(b);
+  });
+}
+function setStat(s){
+  const recs = S.history.filter(h=>h.setNum===s.num && h.kind==="set");
+  if(!recs.length) return {label:"未", cls:""};
+  const last = recs[recs.length-1];
+  const p = Math.round(last.correct/last.total*100);
+  return {label:`${last.correct}/${last.total}`, cls: p>=90?"good":(p>=60?"mid":"")};
+}
+function esc(s){ return String(s).replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+
+$$("#modeSeg button").forEach(b=>b.onclick=()=>{ S.settings.answerMode=b.dataset.mode; save(); renderHome(); });
+$("#btnHistory").onclick = ()=>{ renderHistory(); show("history"); };
+$("#btnSettings").onclick = ()=>{ renderSettings(); show("settings"); };
+$("#btnWeak").onclick = ()=> startQuiz({kind:"weak"});
+$("#btnRandom").onclick = ()=>{
+  modal({title:"何問やる？", body:"ぜんぶの問題（90問）からランダムに出します。", ok:"10問", cancel:"20問",
+    onOk:()=>startQuiz({kind:"random", count:10}),
+    onCancel:()=>startQuiz({kind:"random", count:20})});
+};
+
+/* =========================================================
+   クイズ
+   ========================================================= */
+function shuffled(a){ a=a.slice(); for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
+
+function buildIds(spec){
+  if(spec.kind==="set"){
+    const s = SETS.find(x=>x.num===spec.setNum);
+    let ids = s.items.map(q=>q.id);
+    if(S.settings.shuffle) ids = shuffled(ids);
+    return ids;
+  }
+  if(spec.kind==="random") return shuffled(ALL.map(q=>q.id)).slice(0, spec.count||10);
+  if(spec.kind==="weak")   return shuffled(Object.keys(S.weak)).slice(0,20);
+  if(spec.kind==="retry")  return S.settings.shuffle ? shuffled(spec.ids) : spec.ids.slice();
+  return [];
+}
+function specLabel(spec){
+  if(spec.kind==="set"){ const s=SETS.find(x=>x.num===spec.setNum); return `No.${s.num} ${s.title}`; }
+  if(spec.kind==="random") return `ランダム${spec.count}問`;
+  if(spec.kind==="weak") return "にがて問題";
+  if(spec.kind==="retry") return (spec.baseLabel||"") + "（やり直し）";
+  return "れんしゅう";
+}
+
+function startQuiz(spec, restore){
+  const ids = restore ? restore.ids : buildIds(spec);
+  if(!ids.length){ modal({title:"問題がありません", body:"", ok:"OK", cancel:"", onOk:()=>{}}); return; }
+  Q = {
+    spec, ids, idx: restore? restore.idx : 0,
+    results: restore? restore.results : {},
+    label: specLabel(spec), mode: S.settings.answerMode,
+    combo: 0, startedAt: restore? restore.startedAt : Date.now()
+  };
+  setBodyClass();
+  show("quiz", {title:Q.label});
+  renderQuestion();
+}
+function persistSession(){
+  S.session = Q ? {spec:Q.spec, ids:Q.ids, idx:Q.idx, results:Q.results, startedAt:Q.startedAt, label:Q.label} : null;
+  save();
+}
+
+let pads = [];           // 手書きキャンバス
+let choiceLocked = false;
+
+function renderQuestion(){
+  const q = BY_ID[Q.ids[Q.idx]];
+  $("#qcount").textContent = `${Q.idx+1} / ${Q.ids.length}問`;
+  $("#qbar").style.width = (Q.idx/Q.ids.length*100)+"%";
+  $("#combo").classList.toggle("on", Q.combo>=2);
+  $("#combo").textContent = Q.combo>=2 ? `🔥 ${Q.combo}れんぞく正解！` : "";
+
+  $("#qtext").innerHTML = questionHTML(q,false);
+  $("#reveal").classList.remove("on");
+  $("#btnNext").style.display="none";
+  $("#judgeRow").style.display="flex";
+  $("#quizActions").style.display="block";
+  $("#btnShow").style.display = (Q.mode==="choice") ? "none":"block";
+  choiceLocked=false;
+
+  buildAnswerArea(q);
+  persistSession();
+}
+
+function questionHTML(q, revealed){
+  const chars = q.ans.split("");
+  let blank;
+  if(q.okuri){
+    const inner = chars.map(c=>`<span class="cellbox${revealed?" filled":""}">${revealed?esc(c):"　"}</span>`).join("");
+    blank = `<ruby><span class="okuribr">〔</span>${inner}<span class="okuribr">〕</span><rt>${esc(q.yomiText)}</rt></ruby>`;
+  }else{
+    blank = chars.map((c,i)=>
+      `<ruby><span class="cellbox${revealed?" filled":""}">${revealed?esc(c):"　"}</span><rt>${esc(q.yomi[i]||"")}</rt></ruby>`
+    ).join("");
+  }
+  return esc(q.pre) + blank + esc(q.post);
+}
+
+function buildAnswerArea(q){
+  const area = $("#answerArea");
+  area.innerHTML=""; pads=[];
+  if(Q.mode==="write"){
+    const n = q.ans.length;
+    const wrap = document.createElement("div"); wrap.className="cells";
+    const size = Math.min(112, Math.floor((Math.min(window.innerWidth,780)-60)/Math.max(n,2)) );
+    for(let i=0;i<n;i++){
+      const cw = document.createElement("div"); cw.className="cellwrap";
+      const rt = document.createElement("div"); rt.className="rt";
+      rt.textContent = q.okuri ? (i===0?q.yomiText:"") : (q.yomi[i]||"");
+      const cv = document.createElement("canvas"); cv.className="pad";
+      cw.appendChild(rt); cw.appendChild(cv); wrap.appendChild(cw);
+      pads.push(initPad(cv, size));
+    }
+    area.appendChild(wrap);
+    const tools = document.createElement("div"); tools.className="padtools";
+    tools.innerHTML = `<button id="padUndo">↩︎ もどす</button><button id="padClear">🧽 ぜんぶ消す</button>`;
+    area.appendChild(tools);
+    tools.querySelector("#padUndo").onclick = ()=>{ const p=pads.slice().reverse().find(p=>p.strokes.length); if(p){p.strokes.pop(); p.redraw();} };
+    tools.querySelector("#padClear").onclick = ()=> pads.forEach(p=>{p.strokes=[];p.redraw();});
+  }else if(Q.mode==="choice"){
+    const opts = makeChoices(q);
+    const grid = document.createElement("div"); grid.className="choices";
+    opts.forEach(o=>{
+      const b=document.createElement("button"); b.className="choice"; b.textContent=o;
+      b.onclick=()=>pickChoice(b,o,q,grid);
+      grid.appendChild(b);
+    });
+    area.appendChild(grid);
+  }
+}
+
+function makeChoices(q){
+  const out = new Set([q.ans]);
+  (FORCED[q.id]||[]).forEach(x=>out.add(x));
+  const chars = q.ans.split("");
+  // 漢字の位置だけを入れかえる（送り仮名はそのまま残す）
+  const kanjiIdx = chars.map((c,i)=>/[一-鿿]/.test(c)?i:-1).filter(i=>i>=0);
+  let guard=0;
+  while(out.size<4 && guard++<200){
+    const i = kanjiIdx.length ? kanjiIdx[Math.floor(Math.random()*kanjiIdx.length)] : Math.floor(Math.random()*chars.length);
+    const cand = CONFUSE[chars[i]];
+    if(cand && cand.length){
+      const rep = chars.slice(); rep[i] = cand[Math.floor(Math.random()*cand.length)];
+      out.add(rep.join(""));
+    }else{
+      const other = ALL[Math.floor(Math.random()*ALL.length)];
+      if(other.ans.length===q.ans.length && other.okuri===q.okuri) out.add(other.ans);
+    }
+  }
+  guard=0;
+  while(out.size<4 && guard++<200){
+    const other = ALL[Math.floor(Math.random()*ALL.length)];
+    out.add(other.ans);
+  }
+  return shuffled(Array.from(out)).slice(0,4);
+}
+
+function pickChoice(btn, val, q, grid){
+  if(choiceLocked) return; choiceLocked=true;
+  const ok = (val===q.ans);
+  Array.from(grid.children).forEach(b=>{
+    b.disabled=true;
+    if(b.textContent===q.ans) b.classList.add("correct");
+    else if(b===btn) b.classList.add("wrong");
+  });
+  reveal(q, ok, true);
+}
+
+/* 手書きキャンバス */
+function initPad(cv, size){
+  const dpr = window.devicePixelRatio||1;
+  cv.width = size*dpr; cv.height = size*dpr;
+  cv.style.width = size+"px"; cv.style.height = size+"px";
+  const ctx = cv.getContext("2d"); ctx.scale(dpr,dpr);
+  const pad = {cv, ctx, size, strokes:[], cur:null, redraw};
+  function grid(){
+    ctx.clearRect(0,0,size,size);
+    ctx.save(); ctx.strokeStyle="#dbe6f2"; ctx.lineWidth=1; ctx.setLineDash([5,5]);
+    ctx.beginPath(); ctx.moveTo(size/2,4); ctx.lineTo(size/2,size-4);
+    ctx.moveTo(4,size/2); ctx.lineTo(size-4,size/2); ctx.stroke(); ctx.restore();
+  }
+  function redraw(){
+    grid();
+    ctx.save(); ctx.strokeStyle="#16324f"; ctx.lineWidth=Math.max(4,size/18);
+    ctx.lineCap="round"; ctx.lineJoin="round";
+    pad.strokes.forEach(st=>{
+      ctx.beginPath(); st.forEach((p,i)=> i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]));
+      if(st.length===1){ ctx.lineTo(st[0][0]+.1,st[0][1]+.1); }
+      ctx.stroke();
+    });
+    ctx.restore();
+  }
+  const pos = e=>{ const r=cv.getBoundingClientRect(); return [e.clientX-r.left, e.clientY-r.top]; };
+  cv.addEventListener("pointerdown", e=>{ e.preventDefault(); cv.setPointerCapture(e.pointerId);
+    pad.cur=[pos(e)]; pad.strokes.push(pad.cur); redraw(); });
+  cv.addEventListener("pointermove", e=>{ if(!pad.cur) return; e.preventDefault(); pad.cur.push(pos(e)); redraw(); });
+  const end = ()=>{ pad.cur=null; };
+  cv.addEventListener("pointerup", end); cv.addEventListener("pointercancel", end); cv.addEventListener("pointerleave", end);
+  grid();
+  return pad;
+}
+
+/* 答え合わせ */
+$("#btnShow").onclick = ()=>{
+  const q = BY_ID[Q.ids[Q.idx]];
+  reveal(q, null, false);
+};
+function reveal(q, autoOk, auto){
+  $("#qtext").innerHTML = questionHTML(q,true);
+  $("#ansVal").textContent = q.ans;
+  $("#ansYomi").textContent = "よみ：" + q.yomiText;
+  $("#reveal").classList.add("on");
+  $("#btnShow").style.display="none";
+  if(auto){
+    $("#judgeRow").style.display="none";
+    $("#btnNext").style.display="block";
+    record(q.id, autoOk);
+    splash(autoOk);
+  }else{
+    $("#judgeRow").style.display="flex";
+    $("#btnNext").style.display="none";
+  }
+  $("#reveal").scrollIntoView({behavior:"smooth", block:"nearest"});
+}
+$$("#judgeRow button").forEach(b=>b.onclick=()=>{
+  const ok = b.dataset.j==="1";
+  const q = BY_ID[Q.ids[Q.idx]];
+  record(q.id, ok); splash(ok);
+  setTimeout(nextQuestion, 480);
+});
+$("#btnNext").onclick = nextQuestion;
+
+function splash(ok){
+  const el=$("#splash"); el.className = "on "+(ok?"ok":"ng");
+  el.firstElementChild.textContent = ok?"○":"×";
+  setTimeout(()=>el.className="", 520);
+}
+function record(qid, ok){
+  Q.results[qid] = ok;
+  Q.combo = ok ? Q.combo+1 : 0;
+  // にがてリスト更新（2回連続正解で卒業）
+  const w = S.weak[qid];
+  if(ok){
+    if(w){ w.streak=(w.streak||0)+1; if(w.streak>=2) delete S.weak[qid]; }
+  }else{
+    S.weak[qid] = {streak:0, wrong:((w&&w.wrong)||0)+1, last:Date.now()};
+  }
+  save();
+}
+function nextQuestion(){
+  Q.idx++;
+  if(Q.idx>=Q.ids.length){ finishQuiz(); return; }
+  renderQuestion();
+}
+
+function finishQuiz(){
+  const items = Q.ids.map(id=>({qid:id, ok: !!Q.results[id]}));
+  const correct = items.filter(i=>i.ok).length;
+  const rec = {
+    id:"h"+Date.now(), at:Date.now(), label:Q.label, kind:Q.spec.kind,
+    setNum: Q.spec.kind==="set" ? Q.spec.setNum : null,
+    mode:Q.mode, total:items.length, correct, items
+  };
+  S.history.push(rec);
+  if(S.history.length>300) S.history = S.history.slice(-300);
+  S.session=null; save();
+  renderResult(rec);
+  show("result");
+}
+
+function confirmQuit(){
+  modal({title:"中断しますか？", body:"ここまでの進み具合は保存されます。つぎに開いたとき「つづきから」できます。",
+    ok:"中断する", cancel:"つづける",
+    onOk:()=>{ persistSession(); Q=null; show("home"); renderHome(); }});
+}
+$("#btnQuit").onclick = confirmQuit;
+
+/* よみあげ */
+$("#btnSpeak").onclick = ()=>{
+  if(!S.settings.speech){ modal({title:"よみあげはオフです", body:"「せってい」からオンにできます。", ok:"OK", cancel:"", onOk:()=>{}}); return; }
+  const q = BY_ID[Q.ids[Q.idx]];
+  speak(q.pre + q.yomiText + q.post);
+};
+function speak(text){
+  if(!("speechSynthesis" in window)) return;
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang="ja-JP"; u.rate=.9;
+  speechSynthesis.speak(u);
+}
+
+/* =========================================================
+   結果
+   ========================================================= */
+const MSGS = [
+  [100,"パーフェクト！ すごい！ 🎉"],
+  [90,"すばらしい！ あと少しで満点！ ✨"],
+  [70,"よくできました！ この調子！ 👍"],
+  [50,"はんぶん以上せいかい！ もう一回やってみよう 💪"],
+  [0,"まちがえた問題をもう一回やってみよう 🔥"]
+];
+function renderResult(rec){
+  const p = Math.round(rec.correct/rec.total*100);
+  $("#scoreBig").innerHTML = `${rec.correct}<small> / ${rec.total}問</small>`;
+  $("#scoreMsg").textContent = (MSGS.find(m=>p>=m[0])||MSGS[MSGS.length-1])[1];
+  const ul = $("#resultList"); ul.innerHTML="";
+  rec.items.forEach(it=>{
+    const q = BY_ID[it.qid]; if(!q) return;
+    const li=document.createElement("li");
+    li.innerHTML = `<span class="st ${it.ok?"ok":"ng"}">${it.ok?"○":"×"}</span>
+      <span class="ans">${esc(q.ans)}</span>
+      <span style="flex:1;min-width:0;font-size:.85rem;color:var(--sub)">${esc(q.pre)}［${esc(q.yomiText)}］${esc(q.post)}</span>`;
+    ul.appendChild(li);
+  });
+  const wrongIds = rec.items.filter(i=>!i.ok).map(i=>i.qid);
+  $("#btnRetryWrong").style.display = wrongIds.length? "block":"none";
+  $("#btnRetryWrong").onclick = ()=> startQuiz({kind:"retry", ids:wrongIds, baseLabel:rec.label});
+  $("#btnAgain").onclick = ()=> startQuiz(rec.kind==="retry" ? {kind:"retry", ids:rec.items.map(i=>i.qid), baseLabel:rec.label} : lastSpec(rec));
+  $("#btnHome").onclick = ()=>{ show("home"); renderHome(); };
+}
+function lastSpec(rec){
+  if(rec.kind==="set") return {kind:"set", setNum:rec.setNum};
+  if(rec.kind==="random") return {kind:"random", count:rec.total};
+  if(rec.kind==="weak") return {kind:"weak"};
+  return {kind:"retry", ids:rec.items.map(i=>i.qid), baseLabel:rec.label};
+}
+
+/* =========================================================
+   履歴
+   ========================================================= */
+function fmtDate(t){ const d=new Date(t); return `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`; }
+function renderHistory(){
+  const H = S.history;
+  // graph
+  const g = $("#graph");
+  if(H.length<2){ g.innerHTML = `<p class="muted">テストを2回以上やると、グラフが出ます。</p>`; }
+  else{
+    const data = H.slice(-20).map(h=>Math.round(h.correct/h.total*100));
+    const W=320,Hh=120,pad=22;
+    const step = data.length>1 ? (W-pad*2)/(data.length-1) : 0;
+    const pts = data.map((v,i)=>[pad+i*step, Hh-pad-(v/100)*(Hh-pad*2)+0]);
+    const path = pts.map(p=>`${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(" ");
+    g.innerHTML = `<svg viewBox="0 0 ${W} ${Hh}" style="width:100%;height:auto">
+      <line x1="${pad}" y1="${Hh-pad}" x2="${W-pad}" y2="${Hh-pad}" stroke="#d7e0ec"/>
+      <line x1="${pad}" y1="${pad}" x2="${W-pad}" y2="${pad}" stroke="#eef2f8" stroke-dasharray="3 3"/>
+      <polyline points="${path}" fill="none" stroke="#2f7dd1" stroke-width="2.5" stroke-linejoin="round"/>
+      ${pts.map(p=>`<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="3.2" fill="#2f7dd1"/>`).join("")}
+      <text x="2" y="${pad+4}" font-size="9" fill="#6b7a90">100%</text>
+      <text x="6" y="${Hh-pad+4}" font-size="9" fill="#6b7a90">0%</text>
+    </svg><p class="muted">最新${data.length}回：${data[data.length-1]}%</p>`;
+  }
+  // ranking
+  const agg = {};
+  H.forEach(h=>h.items.forEach(it=>{
+    const q=BY_ID[it.qid]; if(!q) return;
+    const a = agg[q.ans] || (agg[q.ans]={ans:q.ans, n:0, ng:0});
+    a.n++; if(!it.ok) a.ng++;
+  }));
+  const rank = Object.values(agg).filter(a=>a.ng>0).sort((x,y)=> y.ng-x.ng || (y.ng/y.n)-(x.ng/x.n)).slice(0,10);
+  const rl = $("#rankList");
+  rl.innerHTML = rank.length ? rank.map(a=>`<li><span class="k">${esc(a.ans)}</span>
+      <span class="b"><i style="width:${Math.round(a.ng/a.n*100)}%"></i></span>
+      <span class="n">${a.ng}/${a.n}回ミス</span></li>`).join("")
+    : `<p class="muted">まちがえた漢字はまだありません。</p>`;
+  // list
+  const hl = $("#histList");
+  hl.innerHTML = H.length ? H.slice().reverse().map(h=>{
+    const p=Math.round(h.correct/h.total*100);
+    const col = p>=90?"var(--ok)":(p>=60?"var(--warn)":"var(--ng)");
+    return `<li data-id="${h.id}"><span class="d">${fmtDate(h.at)}</span>
+      <span class="t">${esc(h.label)}</span>
+      <span class="s" style="color:${col}">${h.correct}/${h.total}</span></li>`;
+  }).join("") : `<p class="muted">まだ記録がありません。</p>`;
+  hl.querySelectorAll("li").forEach(li=> li.onclick=()=>renderDetail(li.dataset.id));
+}
+function renderDetail(id){
+  const h = S.history.find(x=>x.id===id); if(!h) return;
+  $("#detailHead").textContent = `${fmtDate(h.at)}　${h.label}　${h.correct}/${h.total}問`;
+  const ul = $("#detailList"); ul.innerHTML="";
+  h.items.forEach(it=>{
+    const q=BY_ID[it.qid]; if(!q) return;
+    const li=document.createElement("li");
+    li.innerHTML=`<span class="st ${it.ok?"ok":"ng"}">${it.ok?"○":"×"}</span>
+      <span class="ans">${esc(q.ans)}</span>
+      <span style="flex:1;min-width:0;font-size:.85rem;color:var(--sub)">${esc(q.pre)}［${esc(q.yomiText)}］${esc(q.post)}</span>`;
+    ul.appendChild(li);
+  });
+  show("detail");
+}
+
+/* =========================================================
+   設定
+   ========================================================= */
+function renderSettings(){
+  $$("[data-lay]").forEach(b=>b.classList.toggle("on", b.dataset.lay===S.settings.layout));
+  $$("[data-shuf]").forEach(b=>b.classList.toggle("on", (b.dataset.shuf==="1")===!!S.settings.shuffle));
+  $$("[data-spk]").forEach(b=>b.classList.toggle("on", (b.dataset.spk==="1")===!!S.settings.speech));
+}
+$$("[data-lay]").forEach(b=>b.onclick=()=>{ S.settings.layout=b.dataset.lay; save(); setBodyClass(); renderSettings(); });
+$$("[data-shuf]").forEach(b=>b.onclick=()=>{ S.settings.shuffle=b.dataset.shuf==="1"; save(); renderSettings(); });
+$$("[data-spk]").forEach(b=>b.onclick=()=>{ S.settings.speech=b.dataset.spk==="1"; save(); renderSettings(); });
+
+$("#btnExport").onclick = ()=>{
+  const blob = new Blob([JSON.stringify(S,null,2)], {type:"application/json"});
+  const a = document.createElement("a");
+  const d = new Date();
+  a.href = URL.createObjectURL(blob);
+  a.download = `kanji5-backup-${d.getFullYear()}${String(d.getMonth()+1).padStart(2,"0")}${String(d.getDate()).padStart(2,"0")}.json`;
+  a.click(); setTimeout(()=>URL.revokeObjectURL(a.href), 2000);
+};
+$("#btnImport").onclick = ()=> $("#fileInput").click();
+$("#fileInput").onchange = e=>{
+  const f = e.target.files[0]; if(!f) return;
+  const r = new FileReader();
+  r.onload = ()=>{
+    try{
+      const o = JSON.parse(r.result);
+      if(!o || typeof o!=="object") throw 0;
+      S = Object.assign(clone(DEF), o, {settings:Object.assign({}, DEF.settings, o.settings||{})});
+      save(); renderSettings(); setBodyClass();
+      modal({title:"読みこみました", body:"記録を復元しました。", ok:"OK", cancel:"", onOk:()=>{}});
+    }catch(err){
+      modal({title:"読みこめませんでした", body:"ファイルの形式がちがうようです。", ok:"OK", cancel:"", onOk:()=>{}});
+    }
+  };
+  r.readAsText(f); e.target.value="";
+};
+
+/* =========================================================
+   おうちの人メニュー
+   ========================================================= */
+$("#btnParent").onclick = ()=>{
+  const a = 3+Math.floor(Math.random()*9), b = 12+Math.floor(Math.random()*80);
+  modal({title:"おうちの人メニュー", body:`計算してください： <b>${b} × ${a} = ?</b>`, input:true, ok:"ひらく",
+    onOk:v=>{ if(Number(v)===a*b){ renderParent(); show("parent"); }
+      else modal({title:"ちがいます", body:"", ok:"OK", cancel:"", onOk:()=>{}}); }});
+};
+let answerSetSel = SETS[0].num;
+function renderParent(){
+  const H=S.history;
+  const total = H.reduce((s,h)=>s+h.total,0), ok = H.reduce((s,h)=>s+h.correct,0);
+  $("#parentStats").innerHTML = `テスト回数：<b>${H.length}</b> 回<br>
+    のべ解答数：<b>${total}</b> 問（正解 <b>${ok}</b> 問 / 正答率 <b>${total?Math.round(ok/total*100):0}%</b>）<br>
+    にがてリスト：<b>${Object.keys(S.weak).length}</b> 問<br>
+    最終学習：<b>${H.length?fmtDate(H[H.length-1].at):"—"}</b>`;
+
+  const wl = $("#weakList"); wl.innerHTML="";
+  const ws = Object.entries(S.weak).sort((a,b)=> (b[1].wrong||0)-(a[1].wrong||0));
+  if(!ws.length) wl.innerHTML = `<p class="muted">にがてリストは空です。</p>`;
+  ws.forEach(([qid,w])=>{
+    const q=BY_ID[qid]; if(!q) return;
+    const li=document.createElement("li");
+    li.innerHTML=`<span class="ans">${esc(q.ans)}</span>
+      <span style="flex:1;min-width:0;font-size:.85rem;color:var(--sub)">No.${q.setNum}-${q.no}　${esc(q.pre)}［${esc(q.yomiText)}］${esc(q.post)}</span>
+      <span class="st ng">×${w.wrong||1}</span>`;
+    wl.appendChild(li);
+  });
+
+  const seg = $("#answerSetSeg"); seg.innerHTML="";
+  SETS.forEach(s=>{
+    const b=document.createElement("button"); b.textContent="No."+s.num;
+    b.className = s.num===answerSetSel?"on":"";
+    b.onclick=()=>{ answerSetSel=s.num; renderParent(); };
+    seg.appendChild(b);
+  });
+  const s = SETS.find(x=>x.num===answerSetSel);
+  $("#answerTable").innerHTML = `<tr><th>No</th><th>問題</th><th>読み</th><th>答え</th></tr>` +
+    s.items.map(q=>`<tr><td>${q.no}</td>
+      <td>${esc(q.pre)}<b style="color:#2f7dd1">［　］</b>${esc(q.post)}</td>
+      <td>${esc(q.yomiText)}</td><td class="a">${esc(q.ans)}</td></tr>`).join("");
+}
+$("#btnResetWeak").onclick = ()=> modal({title:"にがてリストを消しますか？", body:"テストの記録は残ります。", ok:"消す",
+  onOk:()=>{ S.weak={}; save(); renderParent(); }});
+$("#btnResetAll").onclick = ()=> modal({title:"すべての記録を消しますか？", body:"履歴・にがてリスト・途中の問題がすべて消えます。もとに戻せません。", ok:"すべて消す",
+  onOk:()=>{ S=clone(DEF); save(); renderParent(); renderHome(); }});
+
+/* =========================================================
+   起動 / レジューム
+   ========================================================= */
+function boot(){
+  setBodyClass(); renderHome(); show("home");
+  const s = S.session;
+  if(s && s.ids && s.idx < s.ids.length){
+    const done = s.idx;
+    modal({
+      title:"つづきがあります",
+      body:`「${esc(s.label)}」の <b>${done+1}問目</b> から途中になっています。`,
+      ok:"つづきから", cancel:"最初から",
+      onOk:()=>{ startQuiz(s.spec, s); },
+      onCancel:()=>{ S.session=null; save(); }
+    });
+  }
+}
+window.addEventListener("beforeunload", ()=>{ if(Q) persistSession(); });
+document.addEventListener("visibilitychange", ()=>{ if(document.hidden && Q) persistSession(); });
+boot();
+</script>
+</body>
+</html>
